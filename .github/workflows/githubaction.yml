@@ -111,4 +111,6 @@ jobs:
           cd /home/react-personal-site
           pwd
           ls
+          docker-compose -f /home/react-personal-site/docker-compose.yml down -v         
+          docker-compose -f /home/react-personal-site/docker-compose.yml up -d
           EOF
