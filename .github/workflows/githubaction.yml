@@ -10,46 +10,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
+    - name: Checkout Code and Set Up Node.js
       uses: actions/checkout@v3
 
-    - name: Install Node.js
+    - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
         node-version: '20'
 
-    - name: Install dependencies
-      run: npm install
-
-    - name: Build React App
-      run: npm run build && 
+    - name: Install dependencies and Build React App
+      run: |
+        npm install
+        npm run build
+        ls -la build  # Check the contents of the build folder
 
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v3
       with:
         name: react-build
-        path: build  # Upload the build directory
+        path: build  # Upload the 'build' directory
 
   deploy:
     runs-on: ubuntu-latest
-    needs: build  # This ensures the deploy step only runs if build succeeds
+    needs: build-and-deploy
 
     steps:
-    - name: Download Build Artifacts
+    - name: Download and Deploy to S3
       uses: actions/download-artifact@v3
       with:
         name: react-build
-    
-    # Add ls -la command here to check the contents of the downloaded artifact
-    - name: List Files After Downloading Artifacts
-      run: ls -la
 
-    # - name: Sync S3 Bucket
-    #   uses: jakejarvis/s3-sync-action@v0.5.1
-    #   with:
-    #     args: --delete
-    #   env:
-    #     AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
-    #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-    #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    #     SOURCE_DIR: 'build'  # The downloaded build directory
+    - run: |
+        ls -la build  # Verify the build folder
+        aws s3 sync build/ s3://${{ secrets.AWS_S3_BUCKET }} --delete
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
